@@ -1,0 +1,214 @@
+# =============================================================================
+# openFrameworks Cross-Platform .gitignore
+# Compatible with Windows (Visual Studio) and macOS (Xcode)
+# =============================================================================
+
+# =============================================================================
+# BUILD OUTPUTS & COMPILED BINARIES
+# =============================================================================
+
+# Object files and intermediate build artifacts
+obj/
+*.o
+*.obj
+*.res
+*.pdb
+*.ilk
+*.exp
+*.lib
+*.idb
+
+# Compiled executables and libraries
+*.exe
+*.app
+*.dll
+*.dylib
+*.so
+*.a
+
+# Keep bin/data/ for assets, but ignore compiled outputs in bin/
+bin/*.exe
+bin/*.pdb
+bin/*.ilk
+bin/*_debug.exe
+bin/*_debug.pdb
+bin/*.app
+bin/*.dll
+bin/*.dylib
+
+# Dependency files
+*.d
+*.dep
+
+# =============================================================================
+# VISUAL STUDIO (Windows)
+# =============================================================================
+
+# User-specific files
+*.vcxproj.user
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# VS cache and intellisense
+.vs/
+*.VC.db
+*.VC.db-shm
+*.VC.db-wal
+*.VC.opendb
+ipch/
+*.ipch
+*.aps
+*.ncb
+*.opensdf
+*.sdf
+*.cachefile
+*.psess
+*.vsp
+*.vspx
+
+# Build logs
+*.log
+*.tlog/
+
+# =============================================================================
+# XCODE (macOS)
+# =============================================================================
+
+# User-specific data
+*.xcuserdata/
+xcuserdata/
+
+# Build folder
+build/
+DerivedData/
+
+# Index data
+*.xcindex/
+
+# Playground data
+timeline.xctimeline
+playground.xcworkspace
+
+# Swift Package Manager
+.swiftpm/
+
+# Xcode workspaces (keep .xcodeproj but ignore workspace user data)
+*.xcworkspace/xcuserdata/
+*.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+
+# =============================================================================
+# macOS SYSTEM FILES
+# =============================================================================
+
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+.AppleDouble
+.LSOverride
+.DocumentRevisions-V100
+.fseventsd
+.TemporaryItems
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+Icon?
+
+# =============================================================================
+# WINDOWS SYSTEM FILES
+# =============================================================================
+
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
+$RECYCLE.BIN/
+*.stackdump
+*.lnk
+
+# =============================================================================
+# LINUX BUILD FILES
+# =============================================================================
+
+# Makefile generated files (keep Makefile itself)
+*.make.Release
+*.make.Debug
+
+# =============================================================================
+# COMMON DEVELOPMENT TOOLS
+# =============================================================================
+
+# VS Code (uncomment if you want to ignore)
+# .vscode/
+
+# JetBrains IDEs
+.idea/
+*.iml
+
+# Sublime Text
+*.sublime-workspace
+*.sublime-project
+
+# =============================================================================
+# OPENFRAMEWORKS SPECIFIC
+# =============================================================================
+
+# Local addon copies (if you prefer linking to oF's addons folder)
+# Uncomment if you don't want to commit local addon copies:
+# local_addons/
+
+# Project generator backups
+*.backup
+
+# openFrameworks temp files
+openFrameworks-Info.plist
+Project.xcconfig
+
+# =============================================================================
+# MISCELLANEOUS
+# =============================================================================
+
+# Logs and debug output
+*.log
+logs/
+debug/
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Archives (usually not needed in repo)
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# Video/audio exports (large files, usually don't belong in repo)
+# Uncomment if needed:
+# *.mov
+# *.mp4
+# *.wav
+# *.mp3
+
+# =============================================================================
+# KEEP THESE (explicit includes)
+# =============================================================================
+
+# Keep data folder for assets (override bin/* ignores)
+!bin/data/
+!bin/data/**
+
+# Keep the .gitkeep files
+!.gitkeep
+!**/.gitkeep
