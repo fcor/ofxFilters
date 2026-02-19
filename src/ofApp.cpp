@@ -146,10 +146,10 @@ void ofApp::keyPressed(int key){
 	if (key == '4') effectBlockDisplace = !effectBlockDisplace;
 
 	// Parameter adjustments
-	if (key == 'q') slitscanDepth = min(slitscanDepth + 5, 59);
-	if (key == 'a') slitscanDepth = max(slitscanDepth - 5, 1);
-	if (key == 'w') blockSize = min(blockSize + 4, 64);
-	if (key == 's') blockSize = max(blockSize - 4, 4);
+	if (key == 'q') slitscanDepth = std::min(slitscanDepth + 5, 59);
+	if (key == 'a') slitscanDepth = std::max(slitscanDepth - 5, 1);
+	if (key == 'w') blockSize = std::min(blockSize + 4, 64);
+	if (key == 's') blockSize = std::max(blockSize - 4, 4);
 	if (key == 'e') blockAmount += 2.0;
 	if (key == 'd') blockAmount = max(blockAmount - 2.0f, 0.0f);
 }
