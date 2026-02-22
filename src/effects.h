@@ -35,7 +35,7 @@ struct EffectModule {
 
 // ---------------------------------------------------------------------------
 // WaveEffect — sine-wave displacement on both axes.
-// Keys: 1 toggles. No param keys assigned here (future).
+// Keys: 1 toggles. No param keys assigned here.
 // ---------------------------------------------------------------------------
 struct WaveEffect : EffectModule {
     float speed   = 3.0f;
@@ -63,7 +63,7 @@ struct SlitscanEffect : EffectModule {
     SlitscanEffect(int nFrames) : depth(30), numFrames(nFrames) { name = "Slitscan"; }
 
     void transform(PixelContext& ctx) override {
-        int frameOffset = (ctx.dstCol * depth) / ctx.camH;
+        int frameOffset = (ctx.dstRow * depth) / ctx.camH;
         ctx.srcFrame = (ctx.srcFrame - frameOffset + numFrames) % numFrames;
     }
 };

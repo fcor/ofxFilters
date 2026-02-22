@@ -26,6 +26,9 @@ class ofApp : public ofBaseApp{
 		void gotMessage(ofMessage msg);
 
 		ofVideoGrabber myCamFeed;
+		ofVideoPlayer  myVideoPlayer;
+		ofPixels       videoFrame;   // RGB conversion buffer for video
+		bool           useVideo;
 
 		unsigned char* effectData;
 

@@ -5,9 +5,15 @@ void ofApp::setup(){
 	camWidth  = 640;
 	camHeight = 480;
 
+	// Camera
 	myCamFeed.listDevices();
 	myCamFeed.setDeviceID(1);
 	myCamFeed.initGrabber(camWidth, camHeight);
+
+	useVideo = true;
+	myVideoPlayer.load("seba.mp4");
+	myVideoPlayer.setLoopState(OF_LOOP_NORMAL);
+	myVideoPlayer.play();
 
 	effectData = new unsigned char[camWidth * camHeight * 3];
 
@@ -47,11 +53,20 @@ void ofApp::setup(){
 
 //--------------------------------------------------------------
 void ofApp::update(){
-	myCamFeed.update();
+	unsigned char* pixelData = nullptr;
 
-	if (!myCamFeed.isFrameNew()) return;
-
-	unsigned char* pixelData  = myCamFeed.getPixels().getData();
+	if (useVideo) {
+		myVideoPlayer.update();
+		if (!myVideoPlayer.isFrameNew()) return;
+		videoFrame = myVideoPlayer.getPixels();
+		videoFrame.setImageType(OF_IMAGE_COLOR);  // normalize RGBA -> RGB
+		videoFrame.resize(camWidth, camHeight);   // match buffer row stride
+		pixelData = videoFrame.getData();
+	} else {
+		myCamFeed.update();
+		if (!myCamFeed.isFrameNew()) return;
+		pixelData = myCamFeed.getPixels().getData();
+	}
 	int            nTotalBytes = camWidth * camHeight * 3;
 	float          time        = ofGetElapsedTimef();
 
@@ -111,11 +126,15 @@ void ofApp::draw(){
 		}
 	}
 
-	// Camera preview (top-left corner)
+	// Source preview (top-left corner)
 	ofSetColor(255);
 	int previewW = camWidth  / 4;
 	int previewH = camHeight / 4;
-	myCamFeed.draw(10, 10, previewW, previewH);
+	if (useVideo) {
+		myVideoPlayer.draw(10, 10, previewW, previewH);
+	} else {
+		myCamFeed.draw(10, 10, previewW, previewH);
+	}
 
 	drawUI();
 }
@@ -133,9 +152,13 @@ void ofApp::drawUI() {
 	auto badge     = [](bool b) -> std::string { return b ? "[ON ] " : "[OFF] "; };
 	auto itemColor = [&](bool b) -> ofColor    { return b ? onColor : offColor; };
 
+	std::string sourceLabel = useVideo ? "[VIDEO] v: cam  p: play/pause"
+	                                   : "[CAM]   v: video";
+
 	using P = std::pair<std::string, ofColor>;
 	std::vector<P> lines = {
 		{"EFFECTS                     FPS: " + ofToString((int)ofGetFrameRate()), white},
+		{sourceLabel, dimColor},
 		{badge(waveEffect->enabled)          + "1: Wave",                         itemColor(waveEffect->enabled)},
 		{badge(rgbSplitEffect->enabled)      + "2: RGB Split",                    itemColor(rgbSplitEffect->enabled)},
 		{badge(slitscanEffect->enabled)      + "3: Slitscan    depth: "
@@ -176,6 +199,10 @@ void ofApp::drawUI() {
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
+	// Source toggle
+	if (key == 'v') useVideo = !useVideo;
+	if (key == 'p' && useVideo) myVideoPlayer.setPaused(!myVideoPlayer.isPaused());
+
 	// Toggle effects
 	if (key == '1') waveEffect->enabled         = !waveEffect->enabled;
 	if (key == '2') rgbSplitEffect->enabled      = !rgbSplitEffect->enabled;
