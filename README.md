@@ -1,26 +1,45 @@
 # ofxFilters
 
-A real-time webcam effect system built with openFrameworks. The vision is a composable filter machine — like analog modular synthesis, where patching transformations together produces a visual result.
+Real-time webcam effects built with [openFrameworks](https://openframeworks.cc). Effects work as **coordinate remappers** — each one answers "for this output pixel, where should I read from?" — so they chain cleanly without intermediate buffers.
 
-## Current Effects
+```
+webcam ──▶ frame buffer ──▶ effect chain ──▶ [ texture renderer ]
+           (60 frames,       remap src              +
+            ring buffer)     coords only      [ ascii renderer  ]
+                                                     │
+                                              on-screen HUD
+```
 
-| Key | Effect |
-|-----|--------|
-| `1` | Wave — sinusoidal pixel displacement |
-| `2` | RGB Split — per-channel horizontal offset |
-| `3` | Slitscan — samples across a rolling frame buffer |
-| `4` | Block Displace — grid-based spatial distortion |
+## Effects
 
-### Parameters
+| Key | Effect | Params |
+|-----|--------|--------|
+| `1` | **Wave** — sinusoidal pixel displacement | — |
+| `2` | **RGB Split** — per-channel horizontal offset (chromatic aberration) | — |
+| `3` | **Slitscan** — each column samples a different past frame | `q`/`a` depth |
+| `4` | **Block Displace** — grid-based spatial distortion | `w`/`s` size · `e`/`d` amount |
+
+Multiple effects can be active at once and apply in order.
+
+## ASCII Renderer
 
 | Key | Action |
 |-----|--------|
-| `q` / `a` | Slitscan depth up / down |
-| `w` / `s` | Block size up / down |
-| `e` / `d` | Block amount up / down |
+| `5` | Toggle ASCII renderer |
+| `6` | Cycle color mode: mono (green) → row-tinted → per-char |
+| `m` / `n` | Cell size smaller / larger |
+| `,` / `.` | Cycle char sets: standard · sparse · dense · organic |
 
-## Architecture
+The ASCII renderer reads from the same processed buffer as the texture renderer and draws on top of it.
 
-Effects operate as coordinate transforms — each modifies **where to sample from** rather than the pixel value directly. They chain in order, output feeding into the next, like signal flow in a modular synth.
+## Build
 
-Planned: a full `EffectModule` / `Renderer` split to make the pipeline reorderable, extensible, and ready for an ASCII renderer layer.
+Requires openFrameworks 0.12.x on macOS.
+
+```sh
+make RunRelease
+```
+
+## License
+
+MIT
