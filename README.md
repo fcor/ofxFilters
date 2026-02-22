@@ -1,6 +1,6 @@
 # ofxFilters
 
-Real-time webcam effects built with [openFrameworks](https://openframeworks.cc). Effects work as **coordinate remappers** — each one answers "for this output pixel, where should I read from?" — so they chain cleanly without intermediate buffers.
+Real-time webcam effects built with [openFrameworks](https://openframeworks.cc). Effects work as **coordinate remappers** — like analog modular synthesis. Patching a set of transformations together generates a visual result. 
 
 ```
 webcam ──▶ frame buffer ──▶ effect chain ──▶ [ texture renderer ]
