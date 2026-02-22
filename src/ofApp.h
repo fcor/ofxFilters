@@ -1,6 +1,8 @@
 #pragma once
 
 #include "ofMain.h"
+#include "effects.h"
+#include "renderers.h"
 
 class ofApp : public ofBaseApp{
 
@@ -24,7 +26,6 @@ class ofApp : public ofBaseApp{
 		ofVideoGrabber myCamFeed;
 
 		unsigned char* effectData;
-		ofTexture effectTexture;
 
 		int camWidth;
 		int camHeight;
@@ -34,19 +35,15 @@ class ofApp : public ofBaseApp{
 		unsigned char* frameBuffer[60];
 		int currentFrameIndex;
 
-		// Enable effects
-		bool effectWave;
-		bool effectRGB;
-		bool effectSlitscan;
-		bool effectBlockDisplace;
+		// Effect chain (ordered; each module modifies PixelContext)
+		std::vector<EffectModule*> effectChain;
+		WaveEffect*          waveEffect;
+		SlitscanEffect*      slitscanEffect;
+		BlockDisplaceEffect* blockDisplaceEffect;
+		RgbSplitEffect*      rgbSplitEffect;
 
-		// Params
-		float waveSpeed;
-		float waveHAmount;
-		float waveVAmount;
-		int rgbShiftAmount;
-		int slitscanDepth;
-		int blockSize;
-		float blockAmount;
-
+		// Renderer chain (each reads effectData and draws)
+		std::vector<Renderer*> renderers;
+		TextureRenderer* textureRenderer;
+		AsciiRenderer*   asciiRenderer;
 };

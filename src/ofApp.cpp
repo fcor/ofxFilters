@@ -2,7 +2,7 @@
 
 //--------------------------------------------------------------
 void ofApp::setup(){
-	camWidth = 640;
+	camWidth  = 640;
 	camHeight = 480;
 
 	myCamFeed.listDevices();
@@ -10,148 +10,138 @@ void ofApp::setup(){
 	myCamFeed.initGrabber(camWidth, camHeight);
 
 	effectData = new unsigned char[camWidth * camHeight * 3];
-	effectTexture.allocate(camWidth, camHeight, GL_RGB);
 
-	// initialize frame buffer
+	// Initialize frame buffer
 	currentFrameIndex = 0;
 	for (int i = 0; i < NUM_FRAMES; i++) {
 		frameBuffer[i] = new unsigned char[camWidth * camHeight * 3];
 		memset(frameBuffer[i], 0, camWidth * camHeight * 3);
 	}
 
-	// Default effect states
-	effectWave = true;
-	effectRGB = true;
-	effectSlitscan = false;
-	effectBlockDisplace = false;
+	// --- Build effect chain ---
+	waveEffect          = new WaveEffect();
+	waveEffect->enabled = true;
+	effectChain.push_back(waveEffect);
 
-	// Default parameters
-	waveSpeed = 3.0;
-	waveHAmount = 6.0;
-	waveVAmount = 10.0;
-	rgbShiftAmount = 7;
-	slitscanDepth = 30;
-	blockSize = 16;
-	blockAmount = 10.0;
+	slitscanEffect          = new SlitscanEffect(NUM_FRAMES);
+	slitscanEffect->enabled = false;
+	effectChain.push_back(slitscanEffect);
+
+	blockDisplaceEffect          = new BlockDisplaceEffect();
+	blockDisplaceEffect->enabled = false;
+	effectChain.push_back(blockDisplaceEffect);
+
+	rgbSplitEffect          = new RgbSplitEffect();
+	rgbSplitEffect->enabled = true;
+	effectChain.push_back(rgbSplitEffect);
+
+	// --- Build renderer chain ---
+	textureRenderer = new TextureRenderer();
+	textureRenderer->allocate(camWidth, camHeight);
+	renderers.push_back(textureRenderer);
+
+	asciiRenderer          = new AsciiRenderer();
+	asciiRenderer->enabled = false;
+	renderers.push_back(asciiRenderer);
 }
 
 //--------------------------------------------------------------
 void ofApp::update(){
 	myCamFeed.update();
 
-	if (myCamFeed.isFrameNew()) {
-		unsigned char* pixelData = myCamFeed.getPixels().getData();
-		int nTotalBytes = camWidth * camHeight * 3;
-		float time = ofGetElapsedTimef();
+	if (!myCamFeed.isFrameNew()) return;
 
-		// Store current frame in buffer
-		memcpy(frameBuffer[currentFrameIndex], pixelData, nTotalBytes);
+	unsigned char* pixelData  = myCamFeed.getPixels().getData();
+	int            nTotalBytes = camWidth * camHeight * 3;
+	float          time        = ofGetElapsedTimef();
 
-		// Process each pixel
-		for (int i = 0; i < nTotalBytes; i++) {
-			int pixelIndex = i / 3;
-			int row = pixelIndex / camWidth;
-			int col = pixelIndex % camWidth;
-			int channel = i % 3;
+	// Store current frame in circular buffer
+	memcpy(frameBuffer[currentFrameIndex], pixelData, nTotalBytes);
 
-			// Start with current position
-			int srcRow = row;
-			int srcCol = col;
-			int srcFrame = currentFrameIndex;  // which frame to sample from
+	// Process each byte (pixel channel) through the effect chain
+	for (int i = 0; i < nTotalBytes; i++) {
+		int pixelIndex = i / 3;
+		int row        = pixelIndex / camWidth;
+		int col        = pixelIndex % camWidth;
+		int channel    = i % 3;
 
-			// --- SLITSCAN (samples from different frames) ---
-			if (effectSlitscan) {
-				int frameOffset = (col * slitscanDepth) / camHeight;
-				srcFrame = (currentFrameIndex - frameOffset + NUM_FRAMES) % NUM_FRAMES;
-			}
+		PixelContext ctx(row, col, channel,
+		                 row, col, currentFrameIndex,
+		                 time, camWidth, camHeight);
 
-			// --- WAVE (displaces position) ---
-			if (effectWave) {
-				int hShift = waveHAmount * sin(srcRow * 0.03 + time * waveSpeed);
-				int vShift = waveVAmount * sin(srcCol * 0.02 + time * waveSpeed * 0.7);
-				srcCol = (srcCol + hShift + camWidth) % camWidth;
-				srcRow = (srcRow + vShift + camHeight) % camHeight;
-			}
-
-			// --- BLOCK DISPLACEMENT ---
-			if (effectBlockDisplace) {
-				int blockX = srcCol / blockSize;
-				int blockY = srcRow / blockSize;
-				int blockShiftX = blockAmount * sin(blockY * 0.5 + time * 2.0);
-				int blockShiftY = blockAmount * 0.5 * sin(blockX * 0.3 + time * 1.5);
-				srcCol = (srcCol + blockShiftX + camWidth) % camWidth;
-				srcRow = (srcRow + blockShiftY + camHeight) % camHeight;
-			}
-
-			// --- RGB SEPARATION (per-channel offset) ---
-			if (effectRGB) {
-				if (channel == 0) {
-					srcCol = (srcCol - rgbShiftAmount + camWidth) % camWidth;
-				}
-				else if (channel == 2) {
-					srcCol = (srcCol + rgbShiftAmount) % camWidth;
-				}
-			}
-
-			// Sample from the appropriate frame
-			int srcIndex = (srcRow * camWidth + srcCol) * 3 + channel;
-			effectData[i] = frameBuffer[srcFrame][srcIndex];
+		for (auto* effect : effectChain) {
+			if (effect->enabled) effect->transform(ctx);
 		}
 
-		currentFrameIndex = (currentFrameIndex + 1) % NUM_FRAMES;
-
-		effectTexture.loadData(effectData, camWidth, camHeight, GL_RGB);
+		int srcIndex   = (ctx.srcRow * camWidth + ctx.srcCol) * 3 + ctx.channel;
+		effectData[i]  = frameBuffer[ctx.srcFrame][srcIndex];
 	}
+
+	currentFrameIndex = (currentFrameIndex + 1) % NUM_FRAMES;
 }
 
 //--------------------------------------------------------------
 void ofApp::draw(){
 	ofBackground(0);
-	ofSetColor(255);
 
-	// Draw the effect scaled to fit window while maintaining aspect ratio
-	float windowW = ofGetWidth();
-	float windowH = ofGetHeight();
-	float camAspect = (float)camWidth / camHeight;
-	float windowAspect = windowW / windowH;
+	// Compute letterboxed display rect
+	float windowW    = ofGetWidth();
+	float windowH    = ofGetHeight();
+	float camAspect  = (float)camWidth / camHeight;
+	float winAspect  = windowW / windowH;
 
 	float effectW, effectH, effectX, effectY;
-	if (windowAspect > camAspect) {
-		// Window is wider - fit to height
+	if (winAspect > camAspect) {
 		effectH = windowH;
 		effectW = effectH * camAspect;
 		effectX = (windowW - effectW) / 2;
 		effectY = 0;
 	} else {
-		// Window is taller - fit to width
 		effectW = windowW;
 		effectH = effectW / camAspect;
 		effectX = 0;
 		effectY = (windowH - effectH) / 2;
 	}
-	effectTexture.draw(effectX, effectY, effectW, effectH);
 
-	// Draw original camera feed in top left corner (small preview)
-	int previewW = camWidth / 4;
+	// Run all renderers
+	for (auto* renderer : renderers) {
+		if (renderer->enabled) {
+			renderer->render(effectData, camWidth, camHeight,
+			                 effectX, effectY, effectW, effectH);
+		}
+	}
+
+	// Camera preview (top-left corner)
+	ofSetColor(255);
+	int previewW = camWidth  / 4;
 	int previewH = camHeight / 4;
-	int margin = 10;
-	myCamFeed.draw(margin, margin, previewW, previewH);
+	myCamFeed.draw(10, 10, previewW, previewH);
 }
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
-	if (key == '1') effectWave = !effectWave;
-	if (key == '2') effectRGB = !effectRGB;
-	if (key == '3') effectSlitscan = !effectSlitscan;
-	if (key == '4') effectBlockDisplace = !effectBlockDisplace;
+	// Toggle effects
+	if (key == '1') waveEffect->enabled         = !waveEffect->enabled;
+	if (key == '2') rgbSplitEffect->enabled      = !rgbSplitEffect->enabled;
+	if (key == '3') slitscanEffect->enabled      = !slitscanEffect->enabled;
+	if (key == '4') blockDisplaceEffect->enabled = !blockDisplaceEffect->enabled;
 
-	// Parameter adjustments
-	if (key == 'q') slitscanDepth = std::min(slitscanDepth + 5, 59);
-	if (key == 'a') slitscanDepth = std::max(slitscanDepth - 5, 1);
-	if (key == 'w') blockSize = std::min(blockSize + 4, 64);
-	if (key == 's') blockSize = std::max(blockSize - 4, 4);
-	if (key == 'e') blockAmount += 2.0;
-	if (key == 'd') blockAmount = max(blockAmount - 2.0f, 0.0f);
+	// Toggle / configure renderers
+	if (key == '0') textureRenderer->enabled     = !textureRenderer->enabled;
+	if (key == '5') asciiRenderer->enabled       = !asciiRenderer->enabled;
+	if (key == '6') asciiRenderer->colorMode     = (asciiRenderer->colorMode + 1) % 3;
+	if (key == 'm') asciiRenderer->cellW         = std::max(asciiRenderer->cellW - 2, 4);
+	if (key == 'n') asciiRenderer->cellW         = std::min(asciiRenderer->cellW + 2, 32);
+	if (key == ',') asciiRenderer->charSetIndex  = (asciiRenderer->charSetIndex - 1 + 4) % 4;
+	if (key == '.') asciiRenderer->charSetIndex  = (asciiRenderer->charSetIndex + 1) % 4;
+
+	// Effect parameters
+	if (key == 'q') slitscanEffect->depth           = std::min(slitscanEffect->depth + 5, 59);
+	if (key == 'a') slitscanEffect->depth           = std::max(slitscanEffect->depth - 5, 1);
+	if (key == 'w') blockDisplaceEffect->blockSize  = std::min(blockDisplaceEffect->blockSize + 4, 64);
+	if (key == 's') blockDisplaceEffect->blockSize  = std::max(blockDisplaceEffect->blockSize - 4, 4);
+	if (key == 'e') blockDisplaceEffect->blockAmount += 2.0f;
+	if (key == 'd') blockDisplaceEffect->blockAmount = std::max(blockDisplaceEffect->blockAmount - 2.0f, 0.0f);
 }
 
 //--------------------------------------------------------------
@@ -200,6 +190,6 @@ void ofApp::gotMessage(ofMessage msg){
 }
 
 //--------------------------------------------------------------
-void ofApp::dragEvent(ofDragInfo dragInfo){ 
+void ofApp::dragEvent(ofDragInfo dragInfo){
 
 }
