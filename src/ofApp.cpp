@@ -116,6 +116,62 @@ void ofApp::draw(){
 	int previewW = camWidth  / 4;
 	int previewH = camHeight / 4;
 	myCamFeed.draw(10, 10, previewW, previewH);
+
+	drawUI();
+}
+
+//--------------------------------------------------------------
+void ofApp::drawUI() {
+	const char* charSetNames[]   = { "standard", "sparse", "dense", "organic" };
+	const char* colorModeNames[] = { "mono", "row", "per-char" };
+
+	ofColor white    = ofColor(255, 255, 255);
+	ofColor onColor  = ofColor(100, 255, 100);
+	ofColor offColor = ofColor(130, 130, 130);
+	ofColor dimColor = ofColor(160, 160, 160);
+
+	auto badge     = [](bool b) -> std::string { return b ? "[ON ] " : "[OFF] "; };
+	auto itemColor = [&](bool b) -> ofColor    { return b ? onColor : offColor; };
+
+	using P = std::pair<std::string, ofColor>;
+	std::vector<P> lines = {
+		{"EFFECTS                     FPS: " + ofToString((int)ofGetFrameRate()), white},
+		{badge(waveEffect->enabled)          + "1: Wave",                         itemColor(waveEffect->enabled)},
+		{badge(rgbSplitEffect->enabled)      + "2: RGB Split",                    itemColor(rgbSplitEffect->enabled)},
+		{badge(slitscanEffect->enabled)      + "3: Slitscan    depth: "
+		     + ofToString(slitscanEffect->depth),                                  itemColor(slitscanEffect->enabled)},
+		{badge(blockDisplaceEffect->enabled) + "4: BlockDisp   size: "
+		     + ofToString(blockDisplaceEffect->blockSize) + "  amt: "
+		     + ofToString(blockDisplaceEffect->blockAmount, 1),                    itemColor(blockDisplaceEffect->enabled)},
+		{"", white},
+		{"RENDERERS", white},
+		{badge(textureRenderer->enabled) + "0: Texture",                          itemColor(textureRenderer->enabled)},
+		{badge(asciiRenderer->enabled)   + "5: ASCII",                            itemColor(asciiRenderer->enabled)},
+		{"      mode: " + std::string(colorModeNames[asciiRenderer->colorMode % 3])
+		     + "  size: " + ofToString(asciiRenderer->cellW)
+		     + "  chars: " + std::string(charSetNames[asciiRenderer->charSetIndex % 4]), dimColor},
+	};
+
+	const int lineH  = 16;
+	const int padX   = 10;
+	const int padY   = 8;
+	const int panelW = 380;
+	const int panelH = (int)lines.size() * lineH + padY * 2;
+	const int panelX = 10;
+	const int panelY = ofGetHeight() - panelH - 10;
+
+	ofEnableAlphaBlending();
+	ofSetColor(0, 0, 0, 180);
+	ofDrawRectangle(panelX, panelY, panelW, panelH);
+	ofDisableAlphaBlending();
+
+	for (int i = 0; i < (int)lines.size(); i++) {
+		if (lines[i].first.empty()) continue;
+		ofSetColor(lines[i].second);
+		ofDrawBitmapString(lines[i].first, panelX + padX, panelY + padY + (i + 1) * lineH);
+	}
+
+	ofSetColor(255);
 }
 
 //--------------------------------------------------------------

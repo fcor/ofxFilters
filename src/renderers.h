@@ -52,7 +52,7 @@ struct TextureRenderer : Renderer {
 //
 // Color modes:
 //   0 = monochrome (CRT green)  — color set once per frame
-//   1 = row-tinted (avg color)  — color set once per row
+//   1 = row-tinted (center px)  — color set once per row, sampled from center column
 //   2 = per-char color          — color set per character
 //
 // Keys: 5=toggle, 6=cycle mode, m/n=cellW -/+, ,/.=char set
@@ -66,7 +66,7 @@ struct AsciiRenderer : Renderer {
     const std::vector<std::string> charSets = {
         " .:-=+*#%@",   // standard 10 levels
         " .+*#@",        // sparse / bold
-        " ░▒▓█",         // block elements
+        " .+#@W",        // dense / grid (ASCII-only)
         " .-+oO0@#",     // organic
     };
 
@@ -87,16 +87,13 @@ struct AsciiRenderer : Renderer {
         for (int r = 0; r < numRows; r++) {
             float drawY = dispY + (r + 1) * cellH;  // Y = baseline of this row
 
-            // Row-tinted: compute average color across this row first
+            // Row-tinted: sample from the center column of this row.
+            // Averaging across all columns cancels complementary colors → gray;
+            // a single center sample preserves actual hue.
             if (colorMode == 1) {
-                int rSum = 0, gSum = 0, bSum = 0;
-                for (int c = 0; c < numCols; c++) {
-                    int sx = ofClamp((int)((c + 0.5f) * w / numCols), 0, w - 1);
-                    int sy = ofClamp((int)((r + 0.5f) * h / numRows), 0, h - 1);
-                    int idx = (sy * w + sx) * 3;
-                    rSum += data[idx]; gSum += data[idx + 1]; bSum += data[idx + 2];
-                }
-                ofSetColor(rSum / numCols, gSum / numCols, bSum / numCols);
+                int sy  = ofClamp((int)((r + 0.5f) * h / numRows), 0, h - 1);
+                int idx = (sy * w + w / 2) * 3;
+                ofSetColor(data[idx], data[idx + 1], data[idx + 2]);
             }
 
             // Draw each character at its exact cell position
