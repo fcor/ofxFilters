@@ -10,10 +10,10 @@ void ofApp::setup(){
 	myCamFeed.setDeviceID(1);
 	myCamFeed.initGrabber(camWidth, camHeight);
 
-	useVideo = true;
+	useVideo = false;
 	myVideoPlayer.load("seba.mp4");
 	myVideoPlayer.setLoopState(OF_LOOP_NORMAL);
-	myVideoPlayer.play();
+	//myVideoPlayer.play();
 
 	effectData = new unsigned char[camWidth * camHeight * 3];
 
